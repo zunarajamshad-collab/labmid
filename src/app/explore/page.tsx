@@ -61,7 +61,7 @@ export default async function ExploreAdsPage({
   let displayAds: AdDisplay[] = [];
   
   if (adsData && adsData.length > 0 && !error) {
-    displayAds = adsData.map((ad: { id: string, title: string, slug: string, packages?: { price: number | string, is_featured: boolean } | null, cities?: { name: string | null }, categories?: { name: string | null }, ad_media?: { thumbnail_url: string | null }[] }) => ({
+    displayAds = adsData.map((ad: { id: string, title: string, slug: string, rank_score?: number, packages?: { price: number | string, is_featured: boolean } | null, cities?: { name: string | null }, categories?: { name: string | null }, ad_media?: { thumbnail_url: string | null }[] }) => ({
       id: ad.id,
       title: ad.title,
       slug: ad.slug,
