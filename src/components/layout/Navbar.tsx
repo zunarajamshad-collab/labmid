@@ -13,6 +13,8 @@ export function Navbar() {
         <div className="hidden md:flex gap-8 items-center flex-1 ml-10">
           <Link href="/explore" className="text-sm font-medium hover:text-primary transition-colors">Explore</Link>
           <Link href="/packages" className="text-sm font-medium hover:text-primary transition-colors">Packages</Link>
+          <Link href="/moderator/queue" className="text-sm font-medium hover:text-primary transition-colors text-amber-500/80">Moderator</Link>
+          <Link href="/admin/dashboard" className="text-sm font-medium hover:text-primary transition-colors text-purple-500/80">Admin</Link>
         </div>
         <div className="flex items-center gap-4">
           <Link href="/explore" aria-label="Search" className="text-muted-foreground hover:text-foreground transition-colors">
