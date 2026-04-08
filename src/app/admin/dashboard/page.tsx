@@ -23,7 +23,7 @@ export default async function AdminDashboardPage() {
       client: p.sender_name || 'Unknown Sender',
       package: p.ads?.packages ? `${p.ads.packages.name} ($${p.ads.packages.price})` : `Custom ($${p.amount})`,
       method: p.method || 'Unknown',
-      trn: p.transaction_ref,
+      trn: p.transaction_ref || 'N/A',
       screenshot: p.screenshot_url || '#',
       submitted: p.created_at ? new Date(p.created_at).toLocaleDateString() : 'Unknown'
     }));
