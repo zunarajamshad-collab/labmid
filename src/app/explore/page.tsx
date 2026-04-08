@@ -7,10 +7,12 @@ import { SearchFilters } from '@/components/explore/SearchFilters'
 
 // Mock Data for structure validation
 const MOCK_ADS = [
-  { id: '1', title: 'Premium Office Space in Downtown', slug: 'premium-office-space', price: '$2,500/mo', city: 'New York', category: 'Real Estate', is_featured: true, rank_score: 85, thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80' },
-  { id: '2', title: '2023 Tesla Model 3 Long Range', slug: 'tesla-model-3-lr', price: '$42,000', city: 'San Francisco', category: 'Vehicles', is_featured: false, rank_score: 40, thumbnail: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=600&q=80' },
-  { id: '3', title: 'Professional Web Development Agency', slug: 'pro-web-dev', price: 'Contact', city: 'Remote', category: 'Services', is_featured: true, rank_score: 70, thumbnail: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80' },
-  { id: '4', title: 'Used Herman Miller Aeron Chair', slug: 'herman-miller-aeron', price: '$450', city: 'Chicago', category: 'Furniture', is_featured: false, rank_score: 20, thumbnail: 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?auto=format&fit=crop&w=600&q=80' }
+  { id: '1', title: 'Luxury Penthouse with View', slug: 'luxury-penthouse', price: '$8,500/mo', city: 'New York', category: 'Real Estate', is_featured: true, rank_score: 95, thumbnail: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80' },
+  { id: '2', title: 'Porsche 911 Carrera GTS', slug: 'porsche-911', price: '$145,000', city: 'Miami', category: 'Vehicles', is_featured: true, rank_score: 90, thumbnail: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80' },
+  { id: '3', title: 'Modern Workspace Solution', slug: 'modern-workspace', price: '$500/wk', city: 'London', category: 'Real Estate', is_featured: false, rank_score: 60, thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80' },
+  { id: '4', title: 'MacBook Pro M3 Max - Sealed', slug: 'macbook-pro-m3', price: '$3,200', city: 'San Jose', category: 'Electronics', is_featured: true, rank_score: 85, thumbnail: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80' },
+  { id: '5', title: 'Designer Lounge Chair', slug: 'designer-chair', price: '$1,200', city: 'Paris', category: 'Furniture', is_featured: false, rank_score: 40, thumbnail: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=800&q=80' },
+  { id: '6', title: 'Canon EOS R5 Mirrorless Camera', slug: 'canon-r5', price: '$3,800', city: 'Tokyo', category: 'Electronics', is_featured: false, rank_score: 55, thumbnail: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80' }
 ]
 
 interface AdDisplay {
@@ -61,17 +63,26 @@ export default async function ExploreAdsPage({
   let displayAds: AdDisplay[] = [];
   
   if (adsData && adsData.length > 0 && !error) {
-    displayAds = adsData.map((ad: { id: string, title: string, slug: string, rank_score?: number, packages?: { price: number | string, is_featured: boolean } | null, cities?: { name: string | null }, categories?: { name: string | null }, ad_media?: { thumbnail_url: string | null }[] }) => ({
-      id: ad.id,
-      title: ad.title,
-      slug: ad.slug,
-      price: ad.packages?.price ? `$${ad.packages.price}` : 'Contact',
-      city: ad.cities?.name || 'Unknown Location',
-      category: ad.categories?.name || 'Uncategorized',
-      is_featured: ad.packages?.is_featured || false,
-      rank_score: ad.rank_score || 0,
-      thumbnail: ad.ad_media && ad.ad_media.length > 0 && ad.ad_media[0].thumbnail_url ? ad.ad_media[0].thumbnail_url : 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=600&q=80'
-    }));
+    displayAds = adsData.map((ad: { id: string, title: string, slug: string, rank_score?: number, packages?: { price: number | string, is_featured: boolean } | null, cities?: { name: string | null }, categories?: { name: string | null }, ad_media?: { thumbnail_url: string | null }[] }) => {
+      const category = ad.categories?.name || 'Uncategorized';
+      let fallbackImg = 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80'; // Default
+      
+      if (category.toLowerCase().includes('real estate')) fallbackImg = 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80';
+      if (category.toLowerCase().includes('vehicles')) fallbackImg = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80';
+      if (category.toLowerCase().includes('electronics')) fallbackImg = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80';
+
+      return {
+        id: ad.id,
+        title: ad.title,
+        slug: ad.slug,
+        price: ad.packages?.price ? `$${ad.packages.price}` : 'Contact',
+        city: ad.cities?.name || 'Unknown Location',
+        category: category,
+        is_featured: ad.packages?.is_featured || false,
+        rank_score: ad.rank_score || 0,
+        thumbnail: ad.ad_media && ad.ad_media.length > 0 && ad.ad_media[0].thumbnail_url ? ad.ad_media[0].thumbnail_url : fallbackImg
+      };
+    });
   } else {
     // Basic filtering for mock data to show it's "working" even without DB
     displayAds = MOCK_ADS.filter((ad: { title: string, category: string, city: string }) => {

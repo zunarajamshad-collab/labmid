@@ -8,9 +8,9 @@ import { supabase } from '@/lib/supabase'
 // Mock context for the ad detail since database isn't connected to NextJS route handlers yet
 const MOCK_AD = {
   id: '1',
-  title: 'Premium Office Space in Downtown',
-  description: 'A fully furnished 2500 sqft premium office space located in the heart of downtown. Features high-speed internet, conference rooms, break areas, and a dedicated reception. \n\nPerfect for a tech startup or agency. Utilities are included in the price. Minimum 12-month lease required.',
-  price: '$2,500/mo',
+  title: 'Luxury Penthouse with View',
+  description: 'A fully furnished premium penthouse located in the heart of the city. Features high-speed internet, floor-to-ceiling windows, and luxury finishes throughout. \n\nPerfect for professionals or small families. Utilities included.',
+  price: '$8,500/mo',
   city: 'New York',
   category: 'Real Estate',
   is_featured: true,
@@ -25,9 +25,9 @@ const MOCK_AD = {
     ads_count: 5
   },
   media: {
-    type: 'youtube', // Can also be 'image'
-    url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
-    video_id: 'dQw4w9WgXcQ' // Mock youtube id if type was youtube
+    type: 'image',
+    url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
+    video_id: 'dQw4w9WgXcQ'
   }
 }
 
@@ -52,13 +52,20 @@ export default async function AdDetailPage({ params }: { params: { slug: string 
     const now = new Date();
     const thirtyDaysLater = new Date(now.getTime() + 30*24*60*60*1000);
 
+    const category = adData.categories?.name || 'Uncategorized';
+    let fallbackImg = 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1200&q=80'; // Default
+    
+    if (category.toLowerCase().includes('real estate')) fallbackImg = 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80';
+    if (category.toLowerCase().includes('vehicles')) fallbackImg = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80';
+    if (category.toLowerCase().includes('electronics')) fallbackImg = 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1200&q=80';
+
     ad = {
       id: adData.id,
       title: adData.title,
       description: adData.description || 'No description available for this listing.',
       price: adData.packages?.price ? `$${adData.packages.price}` : 'Contact',
       city: adData.cities?.name || 'Unknown Location',
-      category: adData.categories?.name || 'Uncategorized',
+      category: category,
       is_featured: adData.packages?.is_featured || false,
       package_name: adData.packages?.name || 'Standard',
       views: 0,
@@ -72,7 +79,7 @@ export default async function AdDetailPage({ params }: { params: { slug: string 
       },
       media: {
         type: mediaType,
-        url: adData.ad_media?.[0]?.original_url || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80',
+        url: adData.ad_media?.[0]?.original_url || fallbackImg,
         video_id: mediaType === 'youtube' ? extractYoutubeId(adData.ad_media[0].original_url) : 'dQw4w9WgXcQ'
       }
     };
