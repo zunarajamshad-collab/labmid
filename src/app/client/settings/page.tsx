@@ -7,24 +7,29 @@ import { supabase } from '@/lib/supabase'
 export default function ClientSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'warning', text: string } | null>(null)
 
   // Form State
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [initialEmail, setInitialEmail] = useState('')
   const [businessName, setBusinessName] = useState('')
   const [phone, setPhone] = useState('')
   const [city, setCity] = useState('')
 
   useEffect(() => {
     async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
+      // Use getSession for immediate session check
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session || !session.user) {
         setLoading(false)
         return
       }
 
+      const user = session.user
       setEmail(user.email || '')
+      setInitialEmail(user.email || '')
 
       // Get profile
       const { data: profile } = await supabase
@@ -61,10 +66,22 @@ export default function ClientSettingsPage() {
     setMessage(null)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
+      // Re-verify session before saving
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session || !session.user) {
+        throw new Error('Your session has expired. Please log in again.')
+      }
+      
+      const user = session.user
 
-      // 1. Update Profile
+      // 1. Update Email if changed
+      if (email !== initialEmail && email.trim() !== '') {
+        const { error: authError } = await supabase.auth.updateUser({ email })
+        if (authError) throw authError
+        setMessage({ type: 'warning', text: 'Profile updated. Please check both your old and new email for confirmation links to complete the email change.' })
+      }
+
+      // 2. Update Profile
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ full_name: fullName })
@@ -72,7 +89,7 @@ export default function ClientSettingsPage() {
       
       if (profileError) throw profileError
 
-      // 2. Update Seller Profile (Upsert in case it doesn't exist)
+      // 3. Update Seller Profile
       const { error: sellerError } = await supabase
         .from('seller_profiles')
         .upsert({
@@ -86,10 +103,12 @@ export default function ClientSettingsPage() {
       
       if (sellerError) throw sellerError
 
-      setMessage({ type: 'success', text: 'Profile updated successfully!' })
+      if (!message) {
+        setMessage({ type: 'success', text: 'Account settings updated successfully!' })
+      }
     } catch (err: any) {
       console.error('Save error:', err)
-      setMessage({ type: 'error', text: err.message || 'Failed to update profile' })
+      setMessage({ type: 'error', text: err.message || 'Failed to update settings' })
     } finally {
       setSaving(false)
     }
@@ -107,113 +126,110 @@ export default function ClientSettingsPage() {
     <div className="container mx-auto px-4 py-12 max-w-4xl">
       <header className="mb-12">
         <h1 className="text-4xl font-black tracking-tight mb-2">Account Settings</h1>
-        <p className="text-muted-foreground text-lg">Manage your personal information and preferences.</p>
+        <p className="text-muted-foreground text-lg">Manage your personal information and security preferences.</p>
       </header>
 
       {message && (
-        <div className={`mb-8 p-4 rounded-2xl flex items-center gap-3 border ${
-          message.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 'bg-destructive/10 border-destructive/20 text-destructive'
+        <div className={`mb-8 p-6 rounded-3xl flex items-start gap-4 border shadow-sm ${
+          message.type === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-500' : 
+          message.type === 'warning' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+          'bg-destructive/10 border-destructive/20 text-destructive'
         }`}>
-          {message.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
-          <span className="font-medium">{message.text}</span>
+          <div className="mt-1">
+            {message.type === 'success' ? <CheckCircle2 className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+          </div>
+          <div>
+            <span className="font-bold block mb-1">{message.type.toUpperCase()}</span>
+            <span className="text-sm font-medium leading-relaxed">{message.text}</span>
+          </div>
         </div>
       )}
 
       <div className="grid gap-8">
         {/* Profile Details */}
-        <section className="glass-effect rounded-3xl p-8 border border-border shadow-xl">
-          <div className="flex items-center gap-3 mb-8 text-foreground font-bold border-b border-border/40 pb-4">
-            <User className="w-5 h-5 text-primary" />
-            Profile Details
+        <section className="glass-effect rounded-[2.5rem] p-10 border border-border shadow-2xl">
+          <div className="flex items-center gap-3 mb-10 text-foreground font-black text-xl">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <User className="w-6 h-6" />
+            </div>
+            Public Profile
           </div>
-          <div className="grid gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+          
+          <div className="grid gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Full Name</label>
                 <input 
                   type="text" 
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="John Doe" 
-                  className="w-full bg-muted/30 border border-border/40 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium" 
+                  className="w-full bg-muted/30 border border-border/40 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-lg" 
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Email Address</label>
-                <input 
-                  type="email" 
-                  value={email}
-                  disabled
-                  className="w-full bg-muted/10 border border-border/20 rounded-xl px-4 py-3 text-muted-foreground cursor-not-allowed font-medium" 
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">Email changes must be requested via support.</p>
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Email (Auth)</label>
+                <div className="relative">
+                  <input 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-primary/5 border border-primary/20 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-lg text-primary placeholder:text-primary/30" 
+                  />
+                  <Mail className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/40 pointer-events-none" />
+                </div>
+                <p className="text-[10px] text-muted-foreground/60 mt-2 px-1">Note: Email changes require verification via your inbox.</p>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Phone Number</label>
                 <input 
                   type="tel" 
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+92 300 1234567" 
-                  className="w-full bg-muted/30 border border-border/40 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium" 
+                  className="w-full bg-muted/30 border border-border/40 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-lg" 
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">City</label>
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Location / City</label>
                 <input 
                   type="text" 
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   placeholder="Lahore" 
-                  className="w-full bg-muted/30 border border-border/40 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary/20 outline-none transition-all font-medium" 
+                  className="w-full bg-muted/30 border border-border/40 rounded-2xl px-5 py-4 focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-lg" 
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Business Name / Bio</label>
+            <div className="space-y-3">
+              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Business Bio / Description</label>
               <textarea 
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="Tell us about yourself or your business..." 
-                className="w-full bg-muted/30 border border-border/40 rounded-xl px-4 py-3 min-h-[120px] focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+                placeholder="Tell the marketplace about your business..." 
+                className="w-full bg-muted/30 border border-border/40 rounded-3xl px-6 py-5 min-h-[160px] focus:ring-4 focus:ring-primary/10 outline-none transition-all font-medium resize-none shadow-inner" 
               />
             </div>
           </div>
         </section>
 
-        {/* Security Section (Placeholder for UI) */}
-        <section className="glass-effect rounded-3xl p-8 border border-border shadow-xl">
-          <div className="flex items-center gap-3 mb-8 text-foreground font-bold border-b border-border/40 pb-4">
-            <Shield className="w-5 h-5 text-primary" />
-            Security & Preferences
-          </div>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
-              <div>
-                <p className="text-sm font-bold">Email Notifications</p>
-                <p className="text-xs text-muted-foreground">Receive updates about your ad status.</p>
-              </div>
-              <div className="w-10 h-6 bg-primary rounded-full relative shadow-inner"><div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" /></div>
-            </div>
-          </div>
-        </section>
-
-        <div className="flex justify-end pt-4">
+        {/* Action Button */}
+        <div className="flex justify-center md:justify-end pt-6">
           <button 
             onClick={handleSave}
             disabled={saving}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-xl shadow-primary/20 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-5 rounded-[1.5rem] font-black text-lg flex items-center justify-center gap-3 transition-all shadow-2xl shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-95"
           >
             {saving ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
             ) : (
-              <Save className="w-5 h-5" />
+              <Save className="w-6 h-6" />
             )}
-            {saving ? 'Saving...' : 'Save Profile Changes'}
+            {saving ? 'UPDATING...' : 'SAVE ALL CHANGES'}
           </button>
         </div>
       </div>
