@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 
 import { CheckCircle2, DollarSign, XCircle, FileText, ArrowUpRight, BarChart } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { isAdmin } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 const MOCK_PAYMENTS = [
   { ad_id: 'ad-102', client: 'Jane Doe', package: 'Premium ($89)', method: 'Bank Transfer', trn: 'TRN-99824X2A', screenshot: 'https://imgur.com/example', submitted: '1 hr ago' },
@@ -10,6 +12,11 @@ const MOCK_PAYMENTS = [
 ]
 
 export default async function AdminDashboardPage() {
+  const authorized = await isAdmin()
+  if (!authorized) {
+    redirect('/')
+  }
+
   const { data: paymentsData, error } = await supabase
     .from('payments')
     .select('*, ads(packages(name, price))')

@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic'
 
 import { Filter, Check, X, Eye, ShieldAlert, MessageSquare } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { isModerator } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 const MOCK_QUEUE = [
   { id: 'ad-103', title: 'Web Development Services', client: 'Alice Smith', category: 'Services', submitted_at: '2 hrs ago', media_type: 'image' },
@@ -10,6 +12,11 @@ const MOCK_QUEUE = [
 ]
 
 export default async function ModeratorQueuePage() {
+  const authorized = await isModerator()
+  if (!authorized) {
+    redirect('/')
+  }
+
   const { data: queueData, error } = await supabase
     .from('ads')
     .select('*, profiles(full_name), categories(name), ad_media(source_type)')

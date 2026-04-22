@@ -1,7 +1,31 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Search, User, PlusCircle } from 'lucide-react'
+import { getCurrentProfile, UserProfile } from '@/lib/auth'
 
 export function Navbar() {
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const p = await getCurrentProfile()
+        setProfile(p)
+      } catch (err) {
+        console.error('Failed to fetch profile:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProfile()
+  }, [])
+
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin'
+  const isModerator = profile?.role === 'moderator' || isAdmin
+
   return (
     <nav className="sticky top-0 z-50 w-full glass-effect border-b border-border/40">
       <div className="container mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
@@ -13,8 +37,14 @@ export function Navbar() {
         <div className="hidden md:flex gap-8 items-center flex-1 ml-10">
           <Link href="/explore" className="text-sm font-medium hover:text-primary transition-colors">Explore</Link>
           <Link href="/packages" className="text-sm font-medium hover:text-primary transition-colors">Packages</Link>
-          <Link href="/moderator/queue" className="text-sm font-medium hover:text-primary transition-colors text-amber-500/80">Moderator</Link>
-          <Link href="/admin/dashboard" className="text-sm font-medium hover:text-primary transition-colors text-purple-500/80">Admin</Link>
+          
+          {/* Protected Links */}
+          {!loading && isModerator && (
+            <Link href="/moderator/queue" className="text-sm font-medium hover:text-primary transition-colors text-amber-500/80">Moderator</Link>
+          )}
+          {!loading && isAdmin && (
+            <Link href="/admin/dashboard" className="text-sm font-medium hover:text-primary transition-colors text-purple-500/80">Admin</Link>
+          )}
         </div>
         <div className="flex items-center gap-4">
           <Link href="/explore" aria-label="Search" className="text-muted-foreground hover:text-foreground transition-colors">
