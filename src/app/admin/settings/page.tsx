@@ -1,6 +1,14 @@
 import { Settings, Save, Globe, Lock, Bell } from 'lucide-react'
+import Link from 'next/link'
+import { isAdmin } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
-export default function AdminSettingsPage() {
+export default async function AdminSettingsPage() {
+  const authorized = await isAdmin()
+  if (!authorized) {
+    redirect('/')
+  }
+
   return (
     <div className="flex flex-col lg:flex-row gap-8 min-h-screen">
       <div className="flex-1 space-y-8">
@@ -68,9 +76,9 @@ export default function AdminSettingsPage() {
       {/* Sidebar (Navigation) */}
       <aside className="w-full lg:w-64 space-y-4 flex-shrink-0">
           <div className="glass-effect rounded-2xl border border-border p-4 space-y-2">
-             <a href="/admin/dashboard" className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-muted-foreground font-medium text-sm">Dashboard</a>
-             <a href="/admin/analytics" className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-muted-foreground font-medium text-sm">Analytics</a>
-             <a href="/admin/settings" className="block w-full text-left px-3 py-2 rounded-lg bg-primary/10 text-primary font-bold text-sm">System Settings</a>
+             <Link href="/admin/dashboard" className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-muted-foreground font-medium text-sm">Dashboard</Link>
+             <Link href="/admin/analytics" className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted text-muted-foreground font-medium text-sm">Analytics</Link>
+             <Link href="/admin/settings" className="block w-full text-left px-3 py-2 rounded-lg bg-primary/10 text-primary font-bold text-sm">System Settings</Link>
           </div>
       </aside>
     </div>

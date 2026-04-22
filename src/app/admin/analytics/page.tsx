@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { BarChart, DollarSign, Activity, Users, ShieldCheck } from 'lucide-react'
+import { isAdmin } from '@/lib/auth'
+import { redirect } from 'next/navigation'
 
 // Metrics Mock Data
 const METRICS = {
@@ -12,7 +14,12 @@ const METRICS = {
   last_cron_run: '10 mins ago'
 }
 
-export default function AnalyticsDashboardPage() {
+export default async function AnalyticsDashboardPage() {
+  const authorized = await isAdmin()
+  if (!authorized) {
+    redirect('/')
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl flex-1 flex flex-col lg:flex-row gap-8">
       
